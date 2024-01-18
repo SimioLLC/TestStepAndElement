@@ -61,13 +61,8 @@ namespace TestStepAndElement
         {
             // Example of how to add a property definition to the step.
             IPropertyDefinition pd;
-            pd = schema.AddExpressionProperty("TestElementName", "ABC");
-            pd.Required = true;
-
-            IRepeatGroupPropertyDefinition elements = schema.AddRepeatGroupProperty("TestElements");
-            pd = elements.PropertyDefinitions.AddElementProperty("TestElement", TestElementDefinition.MY_ID);
+            pd = schema.AddElementProperty("TestElement", TestElementDefinition.MY_ID);
             pd = schema.AddStateProperty("ResponseValue");
-            pd.Required = true;
         }
 
         /// <summary>
@@ -85,15 +80,13 @@ namespace TestStepAndElement
     internal class TestStep : IStep
     {
         IPropertyReaders _properties;
-        IPropertyReader _testElementName;
-        IRepeatingPropertyReader _testElements;
+        IElementProperty _testElement;
         IPropertyReader _responseValue;
 
         public TestStep(IPropertyReaders properties)
         {
             _properties = properties;
-            _testElementName = (IPropertyReader)_properties.GetProperty("TestElementName");
-            _testElements = (IRepeatingPropertyReader)_properties.GetProperty("TestElements");
+            _testElement = (IElementProperty)_properties.GetProperty("TestElement");
             _responseValue = (IPropertyReader)_properties.GetProperty("ResponseValue");
         }
 
@@ -104,40 +97,16 @@ namespace TestStepAndElement
         /// </summary>
         public ExitType Execute(IStepExecutionContext context)
         {
-            var testElementExpression = (IExpressionPropertyReader)_testElementName;
-            var elementName = testElementExpression.GetExpressionValue((IExecutionContext)context).ToString();
-
-            IRepeatingPropertyReader elements = (IRepeatingPropertyReader)_properties.GetProperty("TestElements");
-
-            int numInRepeatGroups = _testElements.GetCount(context);
-            object[] paramsArray = new object[numInRepeatGroups];
-
+            TestElement testElement = (TestElement)_testElement.GetElement(context);            
             double realResponse = 0.0;
-
-            // an array of string values from the repeat group's list of strings
-            for (int i = 0; i < numInRepeatGroups; i++)
-            {
-                // The thing returned from GetRow is IDisposable, so we use the using() pattern here
-                using (IPropertyReaders elementRow = _testElements.GetRow(i, context))
-                {
-                    // Get the string property
-                    IElementProperty element = (IElementProperty)elementRow.GetProperty("TestElement");
-                    TestElement testElement = (TestElement)element.GetElement(context);
-                    if (testElement.GetName() == elementName)
-                    {
-                        realResponse = testElement.GetValue();
-                        break;
-                    }
-                }
-            }
-
+            realResponse = testElement.GetValue();
             IStateProperty responseStateProp = (IStateProperty)_responseValue;
             IState responseState = responseStateProp.GetState(context);
             IRealState responseRealState = responseState as IRealState;
             responseRealState.Value = realResponse;
 
             // Example of how to display a trace line for the step.
-            context.ExecutionInformation.TraceInformation(String.Format("The value for '{0}' is '{1}'.", elementName, realResponse.ToString()));
+            context.ExecutionInformation.TraceInformation(String.Format("The value for '{0}' is '{1}'.", testElement.GetName(), realResponse.ToString()));
 
             return ExitType.FirstExit;
         }
