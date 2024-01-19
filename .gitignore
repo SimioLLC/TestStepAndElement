@@ -4,7 +4,7 @@
 # User-specific files
 *.rsuser
 *.suo
-*.user
+## need this for Properties *.user
 *.userosscache
 *.sln.docstates
 
@@ -81,7 +81,7 @@ StyleCopReport.xml
 *.log
 *.vspscc
 *.vssscc
-*.user
+## Need this for Properties *.user
 *.userosscache
 *.suo
 *.sln.docstates
